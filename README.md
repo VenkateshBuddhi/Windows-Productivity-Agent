@@ -37,11 +37,7 @@ Built using:
 Architecture:
 
 Flow:
-  classify → route → execute → respond → memory → END
-                  ↘           ↗
-                   respond (chat/confirm/clarify/cancel)
-                        ↓
-                    memory → END
+  classify → route → execute → respond(chat/confirm/clarify/cancel) → memory → END
 
 ---
 
@@ -154,24 +150,40 @@ Remember volume at 40 percent
 # Project Structure
 
 Windows Productivity Agent/
-│
+
+
 ├── assets/
+
 ├── logs/
+
 ├── memory/
+
 ├── notebooks/
+
 ├── tests/
+
 │
 ├── src/
-│   └── wpa/
-│       ├── agent/
-│       ├── memory/
-│       ├── tools/
-│       ├── voice/
-│       ├── system/
-│       └── main.py
-│
+
+│     -----   └── wpa/
+
+│       --------------     ├── agent/
+
+│        --------------    ├── memory/
+
+│          --------------  ├── tools/
+
+│         --------------   ├── voice/
+
+│          ---------------  ├── system/
+
+│        ---------------    └── main.py
+
+
 ├── start_wpa.bat
+
 ├── requirements.txt
+
 └── README.md
 
 ---
@@ -207,7 +219,7 @@ pip install -r requirements.txt
 
 Install Ollama:
 
-urlOllama Official Websitehttps://ollama.com
+Ollama Official Website  https://ollama.com
 
 Pull required models:
 
