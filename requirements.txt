@@ -3,7 +3,7 @@ faster-whisper
 sounddevice
 soundfile
 numpy
-openwakeword
+torch
 langchain
 langchain-ollama
 langchain-core

@@ -116,15 +116,6 @@ Examples:
 "launch vlcc" -> open_app(app_name="vlc")
 "open calcultor" -> open_app(app_name="calculator")
 """
-# def build_classifier_prompt_with_memory(
-    
-# ) -> str:
-
-#     """Build the classifier prompt, optionally injecting memory context."""
-
-    
-
-#     return prompt
 
 def classify_intent(user_input: str,memory_context: str = "") -> dict:
     """
@@ -139,17 +130,12 @@ def classify_intent(user_input: str,memory_context: str = "") -> dict:
     )
 
     if memory_context:
-
         prompt = (
-
             f"MEMORY CONTEXT "
             f"(use this to better understand the user):\\n"
-
             f"{memory_context}\\n\\n"
-
             + prompt
         )
-
     try:
         messages = [
             SystemMessage(content=CLASSIFIER_PROMPT),
@@ -157,9 +143,7 @@ def classify_intent(user_input: str,memory_context: str = "") -> dict:
         ]
 
         response = _llm.invoke(messages)
-
         raw = response.content.strip()
-
         # logger.debug(f"[classifier] raw LLM output: {raw}")
 
         # Strip markdown fences if model wrapped JSON in ```json ... ```
@@ -196,12 +180,12 @@ def classify_intent(user_input: str,memory_context: str = "") -> dict:
         if result["intent"] not in valid_intents:
             raise ValueError(f"Unknown intent: {result['intent']}")
 
-        # logger.info(
-        #     f"[classifier] intent={result['intent']} "
-        #     f"tool={result['tool_name']} "
-        #     f"args={result['tool_args']} "
-        #     f"confidence={result['confidence']:.2f}"
-        # )
+        logger.info(
+            f"[classifier] intent={result['intent']} "
+            f"tool={result['tool_name']} "
+            f"args={result['tool_args']} "
+            f"confidence={result['confidence']:.2f}"
+        )
 
         return result
 
