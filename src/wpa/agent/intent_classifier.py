@@ -22,7 +22,7 @@ MODEL_NAME = os.getenv("OLLAMA_MODEL")   # change to your model
 
 _llm = ChatOllama(
     model=MODEL_NAME,
-    temperature=0.0,          # zero temp = deterministic, no creativity needed
+    temperature=0.1,          
     base_url="http://localhost:11434",
     format="json",            # force JSON output mode
 )
@@ -67,6 +67,13 @@ INTENTS:
 - "confirm"   → user is saying yes/confirming a previous action
 - "cancel"    → user is saying no/cancelling a previous action
 
+CRITICAL: When RECENT CONVERSATION is provided:
+- ALWAYS check it first before classifying
+- Look for app/website/file names mentioned by the user in recent messages
+- Resolve "that", "it", "this" by finding the subject from the conversation
+- Example: If user asked "Why YouTube?" and now says "open that" → extract app_name="youtube"
+- DO NOT use "clarify" intent if the conversation context makes it obvious
+
 OUTPUT FORMAT (strict JSON, nothing else):
 {{
   "intent": "tool_use" | "chat" | "clarify" | "confirm" | "cancel",
@@ -88,6 +95,12 @@ EXAMPLES:
 User: "open notepad"
 {{"intent":"tool_use","tool_name":"open_app","tool_args":{{"app_name":"notepad"}},"confidence":0.99,"raw_query":"open notepad"}}
 
+User: "open youtube"
+{{"intent":"tool_use","tool_name":"open_url","tool_args":{{"url":"https://youtube.com"}},"confidence":0.99,"raw_query":"open youtube"}}
+
+User: "open gmail"
+{{"intent":"tool_use","tool_name":"open_url","tool_args":{{"url":"https://gmail.com"}},"confidence":0.99,"raw_query":"open gmail"}}
+
 User: "what time is it"
 {{"intent":"tool_use","tool_name":"get_current_time","tool_args":{{}},"confidence":0.98,"raw_query":"what time is it"}}
 
@@ -106,40 +119,101 @@ User: "no cancel that"
 User: "do the thing"
 {{"intent":"clarify","tool_name":"","tool_args":{{}},"confidence":0.3,"raw_query":"do the thing"}}
 
+CONTEXT RESOLUTION EXAMPLES:
+RECENT CONVERSATION:
+User: Why do we use Spotify?
+Assistant: Spotify is a music streaming service...
+User: "open that"
+{{"intent":"tool_use","tool_name":"open_app","tool_args":{{"app_name":"spotify"}},"confidence":0.95,"raw_query":"open that"}}
+
+RECENT CONVERSATION:
+User: Tell me about Chrome
+Assistant: Chrome is a web browser...
+User: "launch it"
+{{"intent":"tool_use","tool_name":"open_app","tool_args":{{"app_name":"chrome"}},"confidence":0.95,"raw_query":"launch it"}}
+
+RECENT CONVERSATION:
+User: Why do we use YouTube?
+Assistant: YouTube is a video platform...
+User: "that"
+{{"intent":"tool_use","tool_name":"open_url","tool_args":{{"url":"https://youtube.com"}},"confidence":0.95,"raw_query":"that"}}
+
+NOTE: For apps like Spotify, Chrome, VS Code, use open_app. For websites like YouTube, GitHub, use open_url.
+
 When extracting app names:
 - Correct obvious spelling mistakes
 - Normalize common aliases
 - Use the closest valid application name when confidence is high
+- For WEBSITES (YouTube, Gmail, GitHub, Reddit, Twitter, Facebook, etc.) use open_url, NOT open_app
+- For APPLICATIONS (Chrome, VS Code, Notepad, Calculator, Spotify app, etc.) use open_app
 
 Examples:
 "open chromee" -> open_app(app_name="chrome")
 "launch vlcc" -> open_app(app_name="vlc")
 "open calcultor" -> open_app(app_name="calculator")
+"open youtube" -> open_url(url="https://youtube.com")
+"open gmail" -> open_url(url="https://gmail.com")
+"open github" -> open_url(url="https://github.com")
 """
 
-def classify_intent(user_input: str,memory_context: str = "") -> dict:
+def classify_intent(user_input: str, memory_context: str = "", conversation_history: list = None) -> dict:
     """
     Classify user input into a structured intent dict.
     Returns a safe default if LLM fails or returns invalid JSON.
     This function NEVER raises — always returns a valid dict.
     """
-    # logger.info(f"[classifier] input: '{user_input}'")
+    # logger.info(f"[classifier] input: '{user_input}' | history_len={len(conversation_history) if conversation_history else 0}")
     prompt = CLASSIFIER_PROMPT.replace(
         "{tool_catalogue}",
         TOOL_CATALOGUE
     )
 
+    # Build context sections
+    context_parts = []
+    
+    # Add recent conversation history for context (last 3 exchanges)
+    if conversation_history:
+        # Filter out tool execution messages (they start with "[tool:")
+        clean_history = [
+            msg for msg in conversation_history 
+            if not (msg.type == "ai" and msg.content.startswith("[tool:"))
+        ]
+        
+        recent = clean_history[-6:]  # last 3 user-assistant pairs
+        history_lines = []
+        for msg in recent:
+            role = "User" if msg.type == "human" else "Assistant"
+            # Truncate long messages
+            content = msg.content[:200] if len(msg.content) > 200 else msg.content
+            history_lines.append(f"{role}: {content}")
+        
+        if history_lines:
+            context_parts.append(f"RECENT CONVERSATION:\n" + "\n".join(history_lines))
+            # logger.info(f"[classifier] Adding {len(recent)} messages to context")
+    
     if memory_context:
-        prompt = (
-            f"MEMORY CONTEXT "
-            f"(use this to better understand the user):\\n"
-            f"{memory_context}\\n\\n"
-            + prompt
+        context_parts.append(
+            f"MEMORY CONTEXT:\n{memory_context}"
         )
+    
+    # Prepend context to prompt
+    if context_parts:
+        full_context = "\n\n".join(context_parts) + "\n\n"
+        logger.debug(f"[classifier] Context:\n{full_context[:300]}...")
+        prompt = full_context + prompt
+    
     try:
+        # Build the user message with context embedded
+        user_message = f'Classify this: "{user_input}"'
+        
+        # If there's conversation history, embed it in the user message
+        if context_parts:
+            context_str = "\n\n".join(context_parts)
+            user_message = f'{context_str}\n\nNow classify this user input: "{user_input}"'
+        
         messages = [
-            SystemMessage(content=CLASSIFIER_PROMPT),
-            HumanMessage(content=f'Classify this: "{user_input}"'),
+            SystemMessage(content=prompt),
+            HumanMessage(content=user_message),
         ]
 
         response = _llm.invoke(messages)
@@ -180,12 +254,12 @@ def classify_intent(user_input: str,memory_context: str = "") -> dict:
         if result["intent"] not in valid_intents:
             raise ValueError(f"Unknown intent: {result['intent']}")
 
-        logger.info(
-            f"[classifier] intent={result['intent']} "
-            f"tool={result['tool_name']} "
-            f"args={result['tool_args']} "
-            f"confidence={result['confidence']:.2f}"
-        )
+        # logger.info(
+        #     f"[classifier] intent={result['intent']} "
+        #     f"tool={result['tool_name']} "
+        #     f"args={result['tool_args']} "
+        #     f"confidence={result['confidence']:.2f}"
+        # )
 
         return result
 

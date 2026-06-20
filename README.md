@@ -17,43 +17,11 @@ An offline-first AI-powered Windows desktop assistant with:
 
 ## Voice Assistant
 
-- Wake word activation (`hey_jarvis`)
+- Wake word activation (`alexa`)
 - Speech-to-text using Faster Whisper
 - Text-to-speech responses
 - Continuous conversation mode
 - Silence detection + timeout handling
-
----
-
-## Local LLM Agent
-
-Built using:
-
-- LangGraph
-- LangChain
-- Ollama
-- Qwen2.5
-
-Architecture:
-
-Flow:
-  classify → route → execute → respond(chat/confirm/clarify/cancel) → memory → END
-
----
-
-## Tool System
-
-Supports:
-
-- Open applications
-- Open websites
-- Battery status
-- Volume control
-- Clipboard actions
-- File operations
-- Web search
-- System utilities
-
 
 ---
 
@@ -74,6 +42,30 @@ This gives:
 - Safer automation
 
 ---
+
+Architecture:
+
+
+  ![alt text](wpa_architecture.png)
+
+---
+
+## Tool System
+
+Supports:
+
+- Open applications
+- Open websites
+- Battery status
+- Volume control
+- Clipboard actions
+- File operations
+- Web search
+- System utilities
+
+
+---
+
 
 # Memory System
 

@@ -81,10 +81,10 @@ for t in ALL_TOOLS:
 
         pass
 
-logger.info(
-    f"[executor] registered {len(_tool_map)} tools: "
-    f"{list(_tool_map.keys())}"
-)
+# logger.info(
+#     f"[executor] registered {len(_tool_map)} tools: "
+#     f"{list(_tool_map.keys())}"
+# )
 
 def is_process_running(name: str) -> bool:
 

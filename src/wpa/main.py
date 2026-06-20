@@ -34,7 +34,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         logging.FileHandler("logs/wpa.log"),
-        logging.StreamHandler(sys.stdout),
+        # logging.StreamHandler(sys.stdout),  # Disabled terminal output
     ]
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -170,7 +170,7 @@ def initialize_pipeline() -> bool:
             wake_word = WAKE_WORD,
             threshold = WAKE_WORD_THRESHOLD
         )
-        logger.info(f"Wake word ready ('{WAKE_WORD}' threshold={WAKE_WORD_THRESHOLD})")
+        # logger.info(f"Wake word ready ('{WAKE_WORD}' threshold={WAKE_WORD_THRESHOLD})")
     except Exception as e:
         logger.error(f"Wake word init failed: {e}")
         return False
@@ -198,11 +198,11 @@ def initialize_pipeline() -> bool:
 # ══════════════════════════════════════════════════════════════════════════════
 
 def listen_for_wake_word() -> bool:
-    logger.info(f"Waiting for wake word ({WAKE_WORD_TIMEOUT}s)...")
+    # logger.info(f"Waiting for wake word ({WAKE_WORD_TIMEOUT}s)...")
     detected = wake_word_detector.listen(timeout=WAKE_WORD_TIMEOUT)
     if not detected:
         return False
-    logger.info("Wake word detected!")
+    # logger.info("Wake word detected!")
     speak("Yes? How can I help you?")
     return True
 
@@ -217,7 +217,7 @@ def run_conversation_session() -> bool:
     Returns False → full shutdown
     """
     last_activity = time.time()
-    logger.info(f"Conversation started (idle timeout={CONVERSATION_TIMEOUT}s)")
+    # logger.info(f"Conversation started (idle timeout={CONVERSATION_TIMEOUT}s)")
 
     while True:
 
@@ -236,14 +236,14 @@ def run_conversation_session() -> bool:
 
         # Idle timeout
         if time.time() - last_activity >= CONVERSATION_TIMEOUT:
-            logger.info("Conversation idle timeout")
+            # logger.info("Conversation idle timeout")
             speak("Conversation ended.")
             return True
 
         try:
             # Record
             set_status("Listening to you...")
-            logger.info("Recording speech...")
+            # logger.info("Recording speech...")
             audio = record_until_silence(
                 speech_start_timeout_s = 5,
                 silence_threshold_ms   = 2000,
@@ -263,7 +263,7 @@ def run_conversation_session() -> bool:
                 speak("I am listening.")
                 continue
 
-            logger.info(f"Transcript: '{text}'")
+            # logger.info(f"Transcript: '{text}'")
             last_activity = time.time()
 
             # Stop phrase
@@ -330,7 +330,7 @@ def main():
                 continue
 
             session_count += 1
-            logger.info(f"Session {session_count} started")
+            # logger.info(f"Session {session_count} started")
             set_status("In conversation...")
 
             should_continue = run_conversation_session()

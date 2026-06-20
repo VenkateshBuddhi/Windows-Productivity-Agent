@@ -52,7 +52,21 @@ def classify_node(state: AgentState) -> dict:
     memory_context = mem.get_context(
         user_input
     )
-    intent_result = classify_intent(user_input, memory_context=memory_context)
+    
+    # Pass recent conversation history for context
+    conversation_history = state.get("messages", [])
+    
+    # logger.info(f"[classify_node] Messages in history: {len(conversation_history)}")
+    # if conversation_history:
+    #     for i, msg in enumerate(conversation_history[-4:]):
+    #         role = "User" if msg.type == "human" else "Agent"
+    #         logger.info(f"  [{i}] {role}: {msg.content[:60]}...")
+    
+    intent_result = classify_intent(
+        user_input, 
+        memory_context=memory_context,
+        conversation_history=conversation_history
+    )
 
     return {
         "intent_result": intent_result,

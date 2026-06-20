@@ -37,7 +37,7 @@ SAMPLE_RATE = 16000  # Whisper expects 16kHz
 try:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     vad_model = load_silero_vad().to(device)
-    logger.info(f"Silero VAD model loaded (device: {device})")
+    # logger.info(f"Silero VAD model loaded (device: {device})")
 except Exception as e:
     logger.error(f"Failed to load VAD model: {e}", exc_info=True)
     vad_model = None
@@ -53,7 +53,7 @@ def record_audio(duration: int = 5, sample_rate: int = SAMPLE_RATE) -> np.ndarra
     Use record_until_silence() in production — this is for testing only.
     """
     try:
-        logger.info(f"Recording {duration}s (fixed duration)...")
+        # logger.info(f"Recording {duration}s (fixed duration)...")
         audio = sd.rec(
             int(duration * sample_rate),
             samplerate=sample_rate,
@@ -99,7 +99,7 @@ def transcribe_audio(audio: np.ndarray, sample_rate: int = SAMPLE_RATE) -> str:
             tmp_path = tmp.name
 
         duration_s = len(audio) / sample_rate
-        logger.info(f"Transcribing {duration_s:.2f}s of audio...")
+        # logger.info(f"Transcribing {duration_s:.2f}s of audio...")
 
         segments, info = STT_MODEL.transcribe(
             tmp_path,
@@ -110,7 +110,7 @@ def transcribe_audio(audio: np.ndarray, sample_rate: int = SAMPLE_RATE) -> str:
         text = " ".join(seg.text for seg in segments).strip()
 
         elapsed = time.time() - t0
-        logger.info(f"Transcription done in {elapsed:.2f}s: '{text}'")
+        # logger.info(f"Transcription done in {elapsed:.2f}s: '{text}'")
         return text
 
     except Exception as e:
@@ -192,7 +192,7 @@ def record_until_silence(
             frames_per_buffer=frame_size
         )
 
-        logger.info("Listening... (Silero VAD)")
+        # logger.info("Listening... (Silero VAD)")
 
         frames          = []
         pre_buffer      = []       # audio before speech starts (capped)
@@ -238,7 +238,7 @@ def record_until_silence(
                     pre_buffer.pop(0)
 
                 if is_speech:
-                    logger.info("Speech detected — recording")
+                    # logger.info("Speech detected — recording")
                     speech_started = True
                     frames.extend(pre_buffer)
                     pre_buffer.clear()
@@ -247,9 +247,9 @@ def record_until_silence(
                     # CHANGE: speech_start_timeout — give up if nobody speaks
                     waiting_frames += 1
                     if waiting_frames >= speech_start_limit:
-                        logger.info(
-                            f"No speech detected after {speech_start_timeout_s}s — stopping"
-                        )
+                        # logger.info(
+                        #     f"No speech detected after {speech_start_timeout_s}s — stopping"
+                        # )
                         break
 
             else:
@@ -261,7 +261,7 @@ def record_until_silence(
                 else:
                     silence_frames += 1
                     if silence_frames >= silence_limit:
-                        logger.info("Silence detected — stopped")
+                        # logger.info("Silence detected — stopped")
                         break
 
     except Exception as e:
@@ -289,5 +289,5 @@ def record_until_silence(
     audio_np    = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0
     duration    = len(audio_np) / sample_rate
 
-    logger.info(f"VAD recording complete: {len(audio_np)} samples, {duration:.2f}s")
+    # logger.info(f"VAD recording complete: {len(audio_np)} samples, {duration:.2f}s")
     return audio_np

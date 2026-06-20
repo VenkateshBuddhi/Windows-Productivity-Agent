@@ -35,11 +35,11 @@ def tts_worker():
                 engine.setProperty('rate', 180)
                 engine.setProperty('volume', 1.0)
                 
-                # Set female voice
+                # Set Zira voice (female)
                 voices = engine.getProperty('voices')
                 if voices:
                     for voice in voices:
-                        if 'female' in voice.name.lower():
+                        if 'zira' in voice.name.lower():
                             engine.setProperty('voice', voice.id)
                             break
                 
@@ -121,5 +121,20 @@ def speak(text: str, blocking: bool = True, audio_buffer_delay: float = 0.5):
     except Exception as e:
         logger.error(f"Error queuing TTS: {e}", exc_info=True)
 
+def test_voice():
+    """Test the TTS voice with a sample message."""
+    test_messages = [
+        "Hello! I am your Windows Productivity Agent.",
+        "I can open applications, search the web, and control your system."
+    ]
+    
+    for msg in test_messages:
+        print(f"Speaking: {msg}")
+        speak(msg, blocking=True)
+        time.sleep(0.5)
+
 # logger.info("✅ Offline TTS module (pyttsx3) ready!")
+
+if __name__ == "__main__":
+    test_voice()
 
